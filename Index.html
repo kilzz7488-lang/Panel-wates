@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ADMIN PANEL</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
+        body{background:#0a0a0a;padding:20px;color:#ff0000}
+        .container{max-width:1200px;margin:0 auto;background:#1a1a1a;border:3px solid #ff0000;border-radius:40px;padding:30px}
+        h1{text-align:center;color:#ff0000}
+        .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin:30px 0}
+        .stat-box{background:#111;border:2px solid #ff0000;border-radius:20px;padding:20px;text-align:center}
+        .stat-number{font-size:2.5rem;color:#ff0000}
+        .log-panel{background:#000;border:2px solid #ff0000;border-radius:30px;padding:20px;min-height:300px}
+        .log-entry{border-left:4px solid #ff0000;padding:15px;margin:10px 0;background:#111}
+        button{background:#ff0000;color:#000;border:none;padding:10px 20px;border-radius:30px;margin:5px;cursor:pointer}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ADMIN PANEL</h1>
+        <div class="stats">
+            <div class="stat-box"><div class="stat-number" id="totalIP">0</div><div>Total Data</div></div>
+            <div class="stat-box"><div class="stat-number" id="totalLokasi">0</div><div>Dengan Lokasi</div></div>
+            <div class="stat-box"><div class="stat-number" id="totalDevice">0</div><div>Device</div></div>
+        </div>
+        
+        <button onclick="refresh()">🔄 REFRESH</button>
+        <button onclick="exportData()">📥 EXPORT</button>
+        <button onclick="clearData()">🗑️ CLEAR</button>
+        
+        <div class="log-panel" id="logPanel"></div>
+    </div>
+
+    <script>
+        let data = JSON.parse(localStorage.getItem('dataBaru')) || [];
+        
+        function refresh() {
+            // Ambil data dari URL
+            const params = new URLSearchParams(window.location.search);
+            const dataParam = params.get('data');
+            
+            if(dataParam) {
+                try {
+                    let newData = JSON.parse(decodeURIComponent(dataParam));
+                    data.push(newData);
+                    localStorage.setItem('dataBaru', JSON.stringify(data));
+                    window.history.replaceState({}, '', window.location.pathname);
+                } catch(e) {}
+            }
+            
+            // Tampilkan data
+            let html = '';
+            data.slice().reverse().forEach(d => {
+                html += `<div class="log-entry">`;
+                html += `<b>${d.timestamp || '-'}</b><br>`;
+                html += `IP: ${d.ip || '-'}<br>`;
+                if(d.lat) html += `Lokasi: ${d.lat}, ${d.lng}<br>`;
+                html += `Device: ${d.platform || '-'}<br>`;
+                html += `Layar: ${d.screen || '-'}<br>`;
+                html += `</div>`;
+            });
+            document.getElementById('logPanel').innerHTML = html || '<div class="log-entry">Belum ada data</div>';
+            
+            // Update stats
+            document.getElementById('totalIP').innerText = data.length;
+            document.getElementById('totalLokasi').innerText = data.filter(d => d.lat).length;
+            document.getElementById('totalDevice').innerText = data.filter(d => d.platform).length;
+        }
+        
+        function clearData() {
+            data = [];
+            localStorage.removeItem('dataBaru');
+            refresh();
+        }
+        
+        function exportData() {
+            let a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)]));
+            a.download = 'data.json';
+            a.click();
+        }
+        
+        refresh();
+        setInterval(refresh, 3000);
+    </script>
+</body>
+                                    </html>
